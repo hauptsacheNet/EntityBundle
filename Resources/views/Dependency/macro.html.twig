@@ -1,6 +1,6 @@
 {% macro tooltip(entity) %}
     {%- spaceless %}
-        {{ 'Wird Referenziert von'|trans }}:<br>
+        {{ 'Is referenced by'|trans }}:<br>
         {% for blockingEntityChain in find_delete_blocking_entities(entity) %}
             <div class="dependency-tooltip-row">
                 {% for index, chainEntity in blockingEntityChain %}
