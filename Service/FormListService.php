@@ -39,13 +39,19 @@ class FormListService
      * @param array $options
      * @return FormInterface[]
      */
-    public function createFormList($name, $type, array $entities, array $options = array())
+    public function createFormList($name, $type, array $entities, $options = array())
     {
         $forms = array();
         foreach ($entities as $entity) {
             $id = $this->entityService->getIdentifier($entity);
             $formName = $name . '_' . $id;
-            $form = $this->formFactory->createNamed($formName, $type, $entity, $options);
+            $currentOptions = $options;
+
+            if (is_callable($currentOptions)) {
+                $currentOptions = $currentOptions($entity, $formName);
+            }
+
+            $form = $this->formFactory->createNamed($formName, $type, $entity, $currentOptions);
             $forms[$id] = $form;
         }
         return $forms;
@@ -58,7 +64,7 @@ class FormListService
      * @param array $options
      * @return FormView[]
      */
-    public function createFormViewList($name, $type, array $entities, array $options = array())
+    public function createFormViewList($name, $type, array $entities, $options = array())
     {
         $forms = $this->createFormList($name, $type, $entities, $options);
         $views = array();
