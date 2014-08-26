@@ -1,0 +1,27 @@
+{% block entity_plus_widget %}
+    {% import 'HnLayoutBundle:macro:util.html.twig' as util %}
+
+    {%- spaceless %}
+        {% set className = (container_attr.class|default('') ~ ' input-group')|trim %}
+        {% set container_attr = container_attr|default({})|merge({
+            'class': className,
+            'data-update-partial-url': path('hn_entity_entity_updatepartial', {
+                'formType': formType,
+                'propertyPath': full_name,
+                'entityClass': entityClass,
+                'entityId': entityId
+            }),
+            'data-modal-url': path(form.vars.modalRoute, form.vars.modalRouteParameters),
+            'data-entity-class': entityClass
+        }) %}
+
+        <div {{ util.attributes(container_attr) }}>
+            {{ form_widget(form) }}
+            <span class="input-group-btn">
+                <button type="button" class="btn btn-default">
+                    <span class="glyphicon glyphicon-plus"></span>
+                </button>
+            </span>
+        </div>
+    {% endspaceless %}
+{% endblock %}

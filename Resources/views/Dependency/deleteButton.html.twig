@@ -1,0 +1,26 @@
+{% import 'HnEntityBundle:Dependency:macro.html.twig' as dependency %}
+{% import 'HnLayoutBundle:macro:util.html.twig' as util %}
+
+{% set redirect = redirect|default(null) %}
+{% set attr = attr|default({})|merge({
+'href': delete_entity_path(entity, redirect),
+'class': 'btn btn-' ~ (btn_type|default('default'))
+}) %}
+
+{% if not is_deletable(entity) %}
+    {% set attr = attr|merge({
+    'title': dependency.tooltip(entity),
+    'data-toggle': 'tooltip',
+    'data-placement': 'top',
+    'class': attr.class ~ ' disabled',
+    'style': 'pointer-events: auto',
+    'onclick': 'return false'
+    }) %}
+{% endif %}
+
+<a {{ util.attributes(attr) }}>
+    {% block btn_content %}
+        <span class="glyphicon glyphicon-{{ icon|default('trash') }}"></span>
+        {% block btn_text %}{{ 'Löschen'|trans }}{% endblock %}
+    {% endblock %}
+</a>

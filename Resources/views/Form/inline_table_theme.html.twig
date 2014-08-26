@@ -1,0 +1,81 @@
+{% block form_start %}{% endblock %}
+{% block form_end %}{% endblock %}
+
+{% block form_widget_simple %}
+    {%- spaceless %}
+        {% set rootForm = form.parent %}
+        {% set type = type|default('text') %}
+        {#<input type="{{ type }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>#}
+        {% set className = (attr.class|default('') ~ ' editable')|trim %}
+        {% if text_value|default(value) is empty %}
+            {% set className = className ~ ' text-muted' %}
+        {% endif %}
+        {% set attr = attr|merge({
+            'data-url': rootForm.vars.submitPath,
+            'data-send': 'always',
+            'data-name': full_name,
+            'data-type': type,
+            'data-value': value,
+            'data-placement': placement|default('bottom'),
+            'data-emptytext': attr.placeholder|default('empty')|trans,
+            'data-emptyclass': 'text-muted',
+            'class': className,
+            'href': attr.href|default('#')
+        }) %}
+        <a {{ block('widget_container_attributes') }}>
+            {{ text_value|default(value)|default(attr.placeholder|default('empty')|trans) }}
+        </a>
+    {% endspaceless %}
+{% endblock %}
+
+{% block form_row %}
+    {{- form_widget(form) -}}
+{% endblock %}
+
+{% block choice_widget_collapsed %}
+    {%- spaceless %}
+        {% set choiceArray = [] %}
+        {% set type = 'select2' %}
+        {% set text_value = '' %}
+        {% if empty_value is not none %}
+            {% set choiceArray = choiceArray|merge([{ 'value': '', 'text': empty_value }]) %}
+        {% endif %}
+        {% for choice in choices %}
+            {% set choiceArray = choiceArray|merge([{
+            'value': choice.value,
+            'text': choice.label|trans({}, translation_domain)
+            }]) %}
+            {% if choice is selectedchoice(value) %}
+                {% set text_value = choice.label|trans({}, translation_domain) %}
+            {% endif %}
+        {% endfor %}
+        {% set attr = attr|merge({
+        'data-source': choiceArray|json_encode,
+        'data-select2': { dropdownAutoWidth: true, width: 'element' }|json_encode,
+        'placeholder': empty_value|default('empty'|trans)
+        }) %}
+        {{ block('form_widget_simple') }}
+    {% endspaceless %}
+{% endblock choice_widget_collapsed %}
+
+{% block date_widget %}
+    {%- spaceless %}
+        {% set type = 'date' %}
+        {% set attr = attr|merge({
+            'data-format': 'dd.mm.yyyy',
+            'data-viewformat': 'dd.mm.yyyy'
+        }) %}
+        {{ block('form_widget_simple') }}
+        {#{% if widget == 'single_text' %}#}
+            {#{{ block('form_widget_simple') }}#}
+        {#{% else %}#}
+            {#<div {{ block('widget_container_attributes') }}>#}
+                {#{{ date_pattern|replace({#}
+                {#'{{ year }}':  form_widget(form.year),#}
+                {#'{{ month }}': form_widget(form.month),#}
+                {#'{{ day }}':   form_widget(form.day),#}
+                {#})|raw }}#}
+            {#</div>#}
+        {#{% endif %}#}
+    {% endspaceless %}
+{% endblock date_widget %}

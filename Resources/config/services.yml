@@ -1,0 +1,52 @@
+parameters:
+    hn_entity.form.type.entity_plus.class: Hn\EntityBundle\Form\EntityPlusType
+    hn_entity.dependency.class: Hn\EntityBundle\Service\DependencyService
+    hn_entity.formlist.class: Hn\EntityBundle\Service\FormListService
+    hn_entity.entityextension.class: Hn\EntityBundle\Twig\EntityExtension
+    hn_entity.entity.class: Hn\EntityBundle\Service\EntityService
+    hn_entity.deletetype.class: Hn\EntityBundle\Form\DeleteType
+    hn_entity.inlineformtype.class: Hn\EntityBundle\Form\InlineFormType
+    hn_entity.updateableentitytype.class: Hn\EntityBundle\Form\UpdateableEntityType
+
+services:
+
+  hn_entity.entity:
+    class: %hn_entity.entity.class%
+    arguments: [@doctrine.orm.entity_manager]
+
+  hn_entity.dependency:
+    class: %hn_entity.dependency.class%
+    arguments: [@doctrine.orm.entity_manager, @hn_entity.entity, @security.csrf.token_manager, @router]
+
+  hn_entity.formlist:
+    class: %hn_entity.formlist.class%
+    arguments: [@form.factory, @hn_entity.entity]
+
+  hn_entity.entityextension:
+    class: %hn_entity.entityextension.class%
+    arguments: [@hn_entity.dependency, @hn_entity.entity]
+    tags:
+      - { name: twig.extension }
+
+  hn_entity.form.type.entity_plus:
+    class: %hn_entity.form.type.entity_plus.class%
+    arguments: [@doctrine.orm.entity_manager]
+    tags:
+      - { name: form.type, alias: entity_plus }
+
+  hn_entity.deletetype:
+    class: %hn_entity.deletetype.class%
+    tags:
+      - { name: form.type, alias: hn_entity_delete }
+
+  hn_entity.inlineformtype:
+    class: %hn_entity.inlineformtype.class%
+    arguments: [@hn_entity.entity, @router]
+    tags:
+      - { name: form.type, alias: hn_entity_inline_form }
+
+  hn_entity.updateableentitytype:
+    class: %hn_entity.updateableentitytype.class%
+    arguments: [@router]
+    tags:
+      - { name: form.type, alias: hn_updateable_entity }

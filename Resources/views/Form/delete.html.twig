@@ -1,0 +1,8 @@
+{% block hn_entity_delete_widget %}
+    {%- spaceless %}
+        {% set redirect = form.vars.redirect %}
+        {% set entity = form.parent.vars.value %}
+
+        {% include 'HnEntityBundle:Dependency:deleteButton.html.twig' with { entity: entity, redirect: redirect } only %}
+    {% endspaceless %}
+{% endblock %}

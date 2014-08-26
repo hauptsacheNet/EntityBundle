@@ -1,0 +1,19 @@
+{% macro tooltip(entity) %}
+    {%- spaceless %}
+        {{ 'Wird Referenziert von'|trans }}:<br>
+        {% for blockingEntityChain in find_delete_blocking_entities(entity) %}
+            <div class="dependency-tooltip-row">
+                {% for index, chainEntity in blockingEntityChain %}
+                    <span style="display: inline-block">
+                        {% if index > 0 %}&nbsp;=>&nbsp;{% endif %}
+                        <strong class="entity-class" data-class-name="{{ chainEntity|class_name }}">
+                            {{ chainEntity|readable_class_name }}
+                        </strong>
+                        {{- ' ' -}}
+                        <i class="entity-id">{{ chainEntity|readable_id }}</i>
+                    </span>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    {% endspaceless -%}
+{% endmacro %}
