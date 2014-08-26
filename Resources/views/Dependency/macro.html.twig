@@ -2,7 +2,7 @@
     {%- spaceless %}
         {{ 'Is referenced by'|trans }}:<br>
         {% for blockingEntityChain in find_delete_blocking_entities(entity) %}
-            <div class="dependency-tooltip-row">
+            <div class="dependency-tooltip-row" style="text-align: left;">
                 {% for index, chainEntity in blockingEntityChain %}
                     <span style="display: inline-block">
                         {% if index > 0 %}&nbsp;=>&nbsp;{% endif %}
