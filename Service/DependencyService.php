@@ -87,9 +87,10 @@ class DependencyService
         $assiciations = $meta->getAssociationMappings();
         foreach ($assiciations as $field => $data) {
             $targetClass = $data['targetEntity'];
-            $otherProperty = $data['mappedBy'] ? : $data['inversedBy'];
+            $otherProperty = $data['mappedBy']/* ? : $data['inversedBy']*/;
 
             // if the other side has no property to this, it isn't important
+            // we also ignore it, if the other side does not map it (as it would give no error)
             if ($otherProperty === null) {
                 continue;
             }
@@ -239,9 +240,6 @@ class DependencyService
 
         $blockingEntities = $this->findBlockingEntities($entity);
         if (!empty($blockingEntities)) {
-            echo '<pre>';
-            \Doctrine\Common\Util\Debug::dump($this->findBlockingRelations(get_class($entity)));
-            echo '</pre>';
             throw new EntityRelationException("It is not safe to remove entity", $entity, $blockingEntities);
         }
 
