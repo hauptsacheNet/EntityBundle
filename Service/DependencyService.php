@@ -86,12 +86,15 @@ class DependencyService
 
         $assiciations = $meta->getAssociationMappings();
         foreach ($assiciations as $field => $data) {
-            $otherData = array('isCascadeRemove' => false);
             $targetClass = $data['targetEntity'];
             $otherProperty = $data['mappedBy'] ? : $data['inversedBy'];
-            if ($otherProperty !== null) {
-                $otherData = $this->em->getClassMetadata($targetClass)->getAssociationMapping($otherProperty);
+
+            // if the other side has no property to this, it isn't important
+            if ($otherProperty === null) {
+                continue;
             }
+            
+            $otherData = $this->em->getClassMetadata($targetClass)->getAssociationMapping($otherProperty);
 
             // if the relation does not cascade delete, it is blocking
             // check both sides of the relation if it is weak (Issue to MediaObject does not block)
