@@ -93,7 +93,7 @@ class DependencyService
             if ($otherProperty === null) {
                 continue;
             }
-            
+
             $otherData = $this->em->getClassMetadata($targetClass)->getAssociationMapping($otherProperty);
 
             // if the relation does not cascade delete, it is blocking
