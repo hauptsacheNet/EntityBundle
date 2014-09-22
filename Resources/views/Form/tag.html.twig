@@ -1,0 +1,15 @@
+{# for this to work, it requires a script like this one #}
+{# https://gist.github.com/Nemo64/9249376 #}
+{% block hn_entity_tag_widget %}
+    {%- spaceless %}
+        {% set class_name = (attr.class|default('') ~ ' js-select2')|trim %}
+        {% set attr = attr|merge({
+        'class': class_name,
+        'data-tags': form.vars.tags|json_encode,
+        'data-minimum-input-length': minimum_input_length|json_encode,
+        'data-maximum-input-length': maximum_input_length|json_encode,
+        'data-token-separators': token_separators|json_encode
+        }) %}
+        {{ block('form_widget_simple') }}
+    {% endspaceless %}
+{% endblock hn_entity_tag_widget %}

@@ -10,6 +10,7 @@ namespace Hn\EntityBundle\Service;
 
 
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Proxy\Proxy;
 use Hn\EntityBundle\Entity\BaseEntity;
 
 class EntityService
@@ -24,6 +25,49 @@ class EntityService
         $this->em = $em;
     }
 
+    protected function checkObject($object)
+    {
+        if (!is_object($object)) {
+            throw new \RuntimeException("Expected an object, got " . gettype($object));
+        }
+    }
+
+    protected function checkEntity($object)
+    {
+        if (!$this->isEntity($object)) {
+            $type = is_object($object) ? get_class($object) : gettype($object);
+            throw new \RuntimeException("Require an entity for this operation. got $type");
+        }
+    }
+
+    /**
+     * @param object $entity
+     * @return string
+     * @throws \RuntimeException
+     */
+    public function getClass($entity)
+    {
+        $this->checkObject($entity);
+
+        if ($entity instanceof Proxy) {
+            return get_parent_class($entity);
+        } else {
+            return get_class($entity);
+        }
+    }
+
+    /**
+     * @param object $object
+     * @return bool
+     */
+    public function isEntity($object)
+    {
+        $this->checkObject($object);
+
+        $className = $this->getClass($object);
+        return !$this->em->getMetadataFactory()->isTransient($className);
+    }
+
     /**
      * @param $entity
      * @return string
@@ -31,9 +75,7 @@ class EntityService
      */
     public function getReadableClassName($entity)
     {
-        if (!is_object($entity)) {
-            throw new \RuntimeException("Expected an object, got " . gettype($entity));
-        }
+        $this->checkObject($entity);
 
         if ($entity instanceof BaseEntity) {
             return $entity->getHumanClassName();
@@ -51,9 +93,7 @@ class EntityService
      */
     public function getMinimalisticClassName($entity)
     {
-        if (!is_object($entity)) {
-            throw new \RuntimeException("Expected an object, got " . gettype($entity));
-        }
+        $this->checkObject($entity);
 
         $reflection = new \ReflectionClass($entity);
         return mb_strtolower($reflection->getShortName());
@@ -66,9 +106,7 @@ class EntityService
      */
     public function getReadableIdentifier($entity)
     {
-        if (!is_object($entity)) {
-            throw new \RuntimeException("Expected an object, got " . gettype($entity));
-        }
+        $this->checkObject($entity);
 
         return method_exists($entity, 'getHumanIdentifier')
             ? $entity->getHumanIdentifier()
@@ -83,15 +121,12 @@ class EntityService
      */
     public function getIdentifier($entity)
     {
-        if (!is_object($entity)) {
-            throw new \RuntimeException("Expected an object, got " . gettype($entity));
-        }
-        $className = get_class($entity);
+        $this->checkEntity($entity);
+
+        $className = $this->getClass($entity);
         $meta = $this->em->getClassMetadata($className);
-        if ($meta === null) {
-            throw new \LogicException("$className has not meta data");
-        }
         $ids = $meta->getIdentifierValues($entity);
+
         $numIds = count($ids);
         if ($numIds > 1) {
             throw new \LogicException("Can't handle more or less then 1 id per entity, $numIds for $className");
@@ -108,9 +143,7 @@ class EntityService
      */
     public function createRepresentation($entity)
     {
-        if (!is_object($entity)) {
-            throw new \RuntimeException("Expected an object, got " . gettype($entity));
-        }
+        $this->checkObject($entity);
 
         if (method_exists($entity, '__toString')) {
             return (string) $entity;

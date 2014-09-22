@@ -7,6 +7,7 @@ parameters:
     hn_entity.deletetype.class: Hn\EntityBundle\Form\DeleteType
     hn_entity.inlineformtype.class: Hn\EntityBundle\Form\InlineFormType
     hn_entity.updateableentitytype.class: Hn\EntityBundle\Form\UpdateableEntityType
+    hn_entity.tagtype.class: Hn\EntityBundle\Form\TagType
 
 services:
 
@@ -50,3 +51,9 @@ services:
     arguments: [@router]
     tags:
       - { name: form.type, alias: hn_updateable_entity }
+
+  hn_entity.tagtype:
+    class: %hn_entity.tagtype.class%
+    arguments: [@doctrine.orm.entity_manager]
+    tags:
+      - { name: form.type, alias: hn_entity_tag }
