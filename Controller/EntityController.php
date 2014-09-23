@@ -37,6 +37,9 @@ class EntityController extends Controller
         }
 
         $entity = $this->getManager()->find($class, $id);
+        if ($entity === null) {
+            throw $this->createNotFoundException("There is no $class with the id $id");
+        }
         $this->get('hn_entity.dependency')->safeRemove($entity);
 
         $miniClassName = $this->get('hn_entity.entity')->getMinimalisticClassName($entity);
