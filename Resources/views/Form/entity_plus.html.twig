@@ -17,8 +17,14 @@
 
         <div {{ util.attributes(container_attr) }}>
             {{ form_widget(form) }}
+
             <span class="input-group-btn">
-                <button type="button" class="btn btn-default">
+                {% if label is empty -%}
+                    {% set label = name|humanize %}
+                {%- endif -%}
+                <button type="button" class="btn btn-default"
+                        data-toggle="tooltip" data-placement="left"
+                        title="{{ ('entity_plus.plus.' ~ name)|trans({ '%label%': label }) }}">
                     <span class="glyphicon glyphicon-plus"></span>
                 </button>
             </span>
