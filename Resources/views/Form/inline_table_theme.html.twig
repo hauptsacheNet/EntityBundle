@@ -84,7 +84,11 @@
     {% spaceless %}
         {% set rootForm = form.parent %}
         {% set submit_script -%}
-        $.post({{ rootForm.vars.submitPath|json_encode|raw }}, {{ (full_name ~ '=')|json_encode|raw }} + (this.checked ? this.value : ''))
+        var c = this;
+        c.disabled = true;
+        $.post({{ rootForm.vars.submitPath|json_encode|raw }}, {{ (full_name ~ '=')|json_encode|raw }} + (c.checked ? c.value : ''), function (response) {
+        c.disabled = false;
+        });
         {%- endset %}
         <input type="checkbox" onchange="{{ submit_script|e }}"
                 {%- if value is defined %} value="{{ value }}"{% endif %}
