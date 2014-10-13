@@ -79,3 +79,15 @@
         {#{% endif %}#}
     {% endspaceless %}
 {% endblock date_widget %}
+
+{% block checkbox_widget %}
+    {% spaceless %}
+        {% set rootForm = form.parent %}
+        {% set submit_script -%}
+        $.post({{ rootForm.vars.submitPath|json_encode|raw }}, {{ (full_name ~ '=')|json_encode|raw }} + (this.checked ? this.value : ''))
+        {%- endset %}
+        <input type="checkbox" onchange="{{ submit_script|e }}"
+                {%- if value is defined %} value="{{ value }}"{% endif %}
+                {%- if checked %} checked="checked"{% endif %} />
+    {% endspaceless %}
+{% endblock checkbox_widget %}
