@@ -28,6 +28,11 @@
     {% endspaceless %}
 {% endblock %}
 
+{% block textarea_widget %}
+    {%- set type = 'textarea' -%}
+    {{- block('form_widget_simple') -}}
+{% endblock textarea_widget %}
+
 {% block form_row %}
     {{- form_widget(form) -}}
 {% endblock %}
