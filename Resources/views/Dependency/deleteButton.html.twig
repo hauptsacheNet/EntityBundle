@@ -2,9 +2,10 @@
 
 
 {% set redirect = redirect|default(null) %}
+{% set btn_class = btn_class|default('btn btn-' ~ (btn_type|default('default'))) %}
 {% set attr = attr|default({})|merge({
 'href': delete_entity_path(entity, redirect),
-'class': ('btn btn-' ~ (btn_type|default('default')) ~ ' ' ~ attr.class|default(''))|trim
+'class': (btn_class ~ ' ' ~ attr.class|default(''))|trim
 }) %}
 
 {% if not is_deletable(entity) %}
