@@ -3,7 +3,7 @@
 
 {% block form_widget_simple %}
     {%- spaceless %}
-        {% set rootForm = form.parent %}
+        {% set rootForm = form.vars.rootView %}
         {% set type = type|default('text') %}
         {#<input type="{{ type }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>#}
         {% set className = (attr.class|default('') ~ ' editable')|trim %}
@@ -85,18 +85,64 @@
     {% endspaceless %}
 {% endblock date_widget %}
 
+{% block choice_widget_expanded -%}
+    <div {{ block('widget_container_attributes') }}>
+        {%- for child in form %}
+            {{- form_row(child) -}}
+        {% endfor -%}
+    </div>
+{% endblock choice_widget_expanded %}
+
 {% block checkbox_widget %}
     {% spaceless %}
-        {% set rootForm = form.parent %}
+        {% set rootForm = form.vars.rootView %}
+        {% set submitPath = rootForm.vars.submitPath %}
         {% set submit_script -%}
-        var c = this;
-        c.disabled = true;
-        $.post({{ rootForm.vars.submitPath|json_encode|raw }}, {{ (full_name ~ '=')|json_encode|raw }} + (c.checked ? c.value : ''), function (response) {
-        c.disabled = false;
-        });
+        var $this = jQuery(this);
+        var $all = jQuery('[name={{ full_name|json_encode|raw }}]');
+        $all.prop({disabled: true});
+        var req = jQuery.post({{ submitPath|json_encode|raw }}, {{ (full_name ~ '=')|json_encode|raw }} + ($this.is(':checked') ? $this.val() : ''));
+        req.done(function(){ $all.prop({disabled: false}) });
+        req.fail(function(msg){ alert(msg) });
         {%- endset %}
-        <input type="checkbox" onchange="{{ submit_script|e }}"
+        <input type="{{ type|default('checkbox') }}" onchange="{{ submit_script|e }}"
+                {{ block('widget_attributes') }}
                 {%- if value is defined %} value="{{ value }}"{% endif %}
                 {%- if checked %} checked="checked"{% endif %} />
     {% endspaceless %}
 {% endblock checkbox_widget %}
+
+{% block radio_widget %}
+    {%- set type = 'radio' -%}
+    {{- block('checkbox_widget') -}}
+{% endblock radio_widget %}
+
+{% block checkbox_row %}
+    {%- spaceless %}
+        <div class="{{ type|default('checkbox') }}{% if disabled %} disabled{% endif %}">
+            {% if label is not sameas(false) -%}
+
+                {% if required -%}
+                    {% set label_attr = label_attr|merge({'class': (label_attr.class|default('') ~ ' required')|trim}) %}
+                {%- endif %}
+                {% if label is empty -%}
+                    {% set label = name|humanize %}
+                {%- endif -%}
+
+                <label{% for attrname, attrvalue in label_attr %} {{ attrname }}="{{ attrvalue }}"{% endfor %}>
+                {{- form_widget(form) -}}
+                {{- label|trans({}, translation_domain) -}}
+                </label>
+            {% else %}
+                {{- form_widget(form) -}}
+            {%- endif %}
+        </div>
+
+        {{ form_errors(form) }}
+    {% endspaceless %}
+{% endblock checkbox_row %}
+
+{% block radio_row %}
+    {%- set type = 'radio' -%}
+    {{- block('checkbox_row') -}}
+{% endblock radio_row %}

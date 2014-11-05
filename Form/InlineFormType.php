@@ -54,6 +54,26 @@ class InlineFormType extends AbstractType
         ));
     }
 
+    protected function walkViews(FormView $currentView, FormView $rootView)
+    {
+        $currentView->vars['rootView'] = $rootView;
+
+        foreach ($currentView as $childView) {
+
+            if (!$childView instanceof FormView) {
+                // this happens eg. for choices
+                continue;
+            }
+
+            $this->walkViews($childView, $rootView);
+        }
+    }
+
+    public function finishView(FormView $view, FormInterface $form, array $options)
+    {
+        $this->walkViews($view, $view);
+    }
+
     public function getParent()
     {
         return 'form';
