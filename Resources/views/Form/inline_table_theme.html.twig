@@ -28,6 +28,18 @@
     {% endspaceless %}
 {% endblock %}
 
+{% block hidden_widget %}
+    {% set rootForm = form.vars.rootView %}
+    {% set submitPath = rootForm.vars.submitPath %}
+    {% set submit_script -%}
+    var $this = jQuery(this);
+    var req = jQuery.post({{ submitPath|json_encode|raw }}, {{ (full_name ~ '=')|json_encode|raw }} + encodeURIComponent($this.val()));
+    req.fail(function(msg){ alert(msg) });
+    {%- endset %}
+    <input type="hidden" {{ block('widget_attributes') }}
+           onchange="{{ submit_script|e }}" {% if value is not empty %}value="{{ value }}" {% endif %}/>
+{% endblock hidden_widget %}
+
 {% block textarea_widget %}
     {%- set type = 'textarea' -%}
     {{- block('form_widget_simple') -}}
@@ -71,17 +83,6 @@
             'data-viewformat': 'dd.mm.yyyy'
         }) %}
         {{ block('form_widget_simple') }}
-        {#{% if widget == 'single_text' %}#}
-            {#{{ block('form_widget_simple') }}#}
-        {#{% else %}#}
-            {#<div {{ block('widget_container_attributes') }}>#}
-                {#{{ date_pattern|replace({#}
-                {#'{{ year }}':  form_widget(form.year),#}
-                {#'{{ month }}': form_widget(form.month),#}
-                {#'{{ day }}':   form_widget(form.day),#}
-                {#})|raw }}#}
-            {#</div>#}
-        {#{% endif %}#}
     {% endspaceless %}
 {% endblock date_widget %}
 
