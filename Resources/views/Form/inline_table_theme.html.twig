@@ -55,7 +55,7 @@
         {% set type = 'select2' %}
         {% set text_value = '' %}
         {% if empty_value is not none %}
-            {% set choiceArray = choiceArray|merge([{ 'value': '', 'text': empty_value }]) %}
+            {% set choiceArray = choiceArray|merge([{ 'value': '', 'text': empty_value|trans }]) %}
         {% endif %}
         {% for choice in choices %}
             {% set choiceArray = choiceArray|merge([{
