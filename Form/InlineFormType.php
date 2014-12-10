@@ -43,14 +43,20 @@ class InlineFormType extends AbstractType
 
     public function buildView(FormView $view, FormInterface $form, array $options)
     {
-        if (!is_object($form->getData())) {
-            throw new UnexpectedTypeException($form->getData(), 'entity');
+        $formData = $form->getData();
+        if (!is_object($formData)) {
+            throw new UnexpectedTypeException($formData, 'entity');
         }
+
+        if (!$this->entityService->getIdentifier($formData)) {
+            throw new \RuntimeException("An entity must be persisted before it can be inline edited.");
+        }
+
         $view->vars['submitPath'] = $this->router->generate('hn_entity_entity_updateproperty', array(
             'formTypeClass' => $options['form_type_class'],
             'formBaseName' => $form->getName(),
-            'entityClass' => get_class($form->getData()),
-            'entityId' => $this->entityService->getIdentifier($form->getData())
+            'entityClass' => get_class($formData),
+            'entityId' => $this->entityService->getIdentifier($formData)
         ));
     }
 
