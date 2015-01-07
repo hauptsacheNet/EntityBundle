@@ -20,10 +20,11 @@
             'data-emptytext': attr.placeholder|default('empty')|trans,
             'data-emptyclass': 'text-muted',
             'class': className,
-            'href': attr.href|default('#')
+        'href': attr.href|default('#'),
+        'style': 'white-space: pre;' ~ attr.style|default('')
         }) %}
         <a {{ block('widget_container_attributes') }}>
-            {{ text_value|default(value)|default(attr.placeholder|default('empty')|trans) }}
+            {{- text_value|default(value)|default(attr.placeholder|default('empty')|trans) -}}
         </a>
     {% endspaceless %}
 {% endblock %}
