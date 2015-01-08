@@ -3,14 +3,16 @@
 
 {% block form_widget_simple %}
     {%- spaceless %}
-        {% set rootForm = form.vars.rootView %}
-        {% set type = type|default('text') %}
-        {#<input type="{{ type }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>#}
-        {% set className = (attr.class|default('') ~ ' editable')|trim %}
-        {% if text_value|default(value) is empty %}
-            {% set className = className ~ ' text-muted' %}
-        {% endif %}
-        {% set attr = attr|merge({
+        {% set normal_text = not read_only and not disabled %}
+
+        {% if normal_text %}
+            {% set rootForm = form.vars.rootView %}
+            {% set type = type|default('text') %}
+            {% set className = (attr.class|default('') ~ ' editable')|trim %}
+            {% if text_value|default(value) is empty %}
+                {% set className = className ~ ' text-muted' %}
+            {% endif %}
+            {% set attr = attr|merge({
             'data-url': rootForm.vars.submitPath,
             'data-send': 'always',
             'data-name': full_name,
@@ -19,12 +21,16 @@
             'data-placement': placement|default('bottom'),
             'data-emptytext': attr.placeholder|default('empty')|trans,
             'data-emptyclass': 'text-muted',
-            'class': className,
-        'href': attr.href|default('#'),
+            'class': className
+            }) %}
+        {% endif %}
+
+        {% set attr = attr|merge({
+        'href': attr.href|default('#' ~ id),
         'style': 'white-space: pre;' ~ attr.style|default('')
         }) %}
         <a {{ block('widget_container_attributes') }}>
-            {{- text_value|default(value)|default(attr.placeholder|default('empty')|trans) -}}
+            {{- text_value|default(value)|default(attr.placeholder|default(normal_text ? 'empty' : '')|trans) -}}
         </a>
     {% endspaceless %}
 {% endblock %}
