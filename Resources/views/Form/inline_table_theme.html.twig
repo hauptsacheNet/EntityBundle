@@ -27,7 +27,7 @@
 
         {% set attr = attr|merge({
         'href': attr.href|default('#' ~ id),
-        'style': 'white-space: pre;' ~ attr.style|default('')
+        'style': 'white-space: pre-wrap;' ~ attr.style|default('')
         }) %}
         <a {{ block('widget_container_attributes') }}>
             {{- text_value|default(value)|default(attr.placeholder|default(normal_text ? 'empty' : '')|trans) -}}
