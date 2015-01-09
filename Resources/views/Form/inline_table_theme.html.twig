@@ -42,6 +42,7 @@
     var $this = jQuery(this);
     var req = jQuery.post({{ submitPath|json_encode|raw }}, {{ (full_name ~ '=')|json_encode|raw }} + encodeURIComponent($this.val()));
     req.fail(function(e){ alert(e.statusText); console.error(e) });
+    req.success(function(e){ $this.trigger('save') });
     {%- endset %}
     <input type="hidden" {{ block('widget_attributes') }}
            onchange="{{ submit_script|e }}" {% if value is not empty %}value="{{ value }}" {% endif %}/>
@@ -112,6 +113,7 @@
         var req = jQuery.post({{ submitPath|json_encode|raw }}, {{ (full_name ~ '=')|json_encode|raw }} + ($this.is(':checked') ? $this.val() : ''));
         req.done(function(){ $all.prop({disabled: false}) });
         req.fail(function(e){ alert(e.statusCode); console.error(e); });
+        req.success(function(e){ $this.trigger('save') });
         {%- endset %}
         <input type="{{ type|default('checkbox') }}" onchange="{{ submit_script|e }}"
                 {{ block('widget_attributes') }}
