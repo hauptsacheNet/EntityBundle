@@ -10,11 +10,14 @@ namespace Hn\EntityBundle\Service;
 
 
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Hn\EntityBundle\Exception\EntityRelationException;
+use Hn\EntityBundle\Service\DependencyService\BlockingRelationInterface;
+use Hn\EntityBundle\Service\DependencyService\DeepBlockingRelation;
+use Hn\EntityBundle\Service\DependencyService\InversedBlockingRelation;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\Routing\RouterInterface;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 class DependencyService
@@ -47,6 +50,12 @@ class DependencyService
      */
     private $propertyAccessor;
 
+    /**
+     * array("className" => array(BlockingRelation, ...))
+     * @var BlockingRelationInterface[][]
+     */
+    private $blockingRelationCache = array();
+
     public function __construct(EntityManager $em, EntityService $entityService, CsrfTokenManagerInterface $csrf, RouterInterface $router)
     {
         $this->em = $em;
@@ -57,76 +66,66 @@ class DependencyService
     }
 
     /**
-     * Finds all relations which don't get removed if the specified entity is removed.
-     * It is very likely that you don't want to remove an entity if it still has such relations.
-     *
-     * This method returns an array where the keys are properties which need to be accessed.
-     * The value is either "null" which means this property is a blocking relation
-     * or another array which means the value of that property needs to be checked with that array too.
-     *
-     * array(
-     *     "jobs" => NULL
-     *     "issues" => array(
-     *         "homeAds" => NULL
-     *     )
-     * )
-     *
      * @param string $className
-     * @return array
-     * @throws \RuntimeException
+     * @return BlockingRelationInterface[]
      */
-    public function findBlockingRelations($className)
+    protected function findBlockingRelations($className)
     {
-        $result = array();
-        $meta = $this->em->getClassMetadata($className);
-
-        if ($meta === null) {
-            throw new \RuntimeException("'$className' has no meta data");
+        if (array_key_exists($className, $this->blockingRelationCache)) {
+            return $this->blockingRelationCache[$className];
         }
 
-        $assiciations = $meta->getAssociationMappings();
-        foreach ($assiciations as $field => $data) {
-            $targetClass = $data['targetEntity'];
-            $otherProperty = $data['mappedBy']/* ? : $data['inversedBy']*/;
+        $blockingRelations = array();
+        $classMetadataFactory = $this->em->getMetadataFactory();
 
-            // if the other side has no property to this, it isn't important
-            // we also ignore it, if the other side does not map it (as it would give no error)
-            if ($otherProperty === null) {
-                continue;
-            }
+        /** @var ClassMetadataInfo $thisClassMetadata */
+        $thisClassMetadata = $classMetadataFactory->getMetadataFor($className);
+        $reflClass = $thisClassMetadata->reflClass;
 
-            $otherData = $this->em->getClassMetadata($targetClass)->getAssociationMapping($otherProperty);
+        /** @var ClassMetadataInfo $classMetadata */
+        foreach ($classMetadataFactory->getAllMetadata() as $classMetadata) {
 
-            // if the relation does not cascade delete, it is blocking
-            // check both sides of the relation if it is weak (Issue to MediaObject does not block)
-            $weakRelation = $data['isCascadeRemove'] || $otherData['isCascadeRemove'];
-            if (!$weakRelation) {
-                $result[$field] = null;
-                continue;
-            }
+            $associations = $classMetadata->getAssociationMappings();
+            foreach ($associations as $field => $data) {
 
-            // if the relation is weak from the other side don't do these checks (Issue to MediaObject)
-            if (!$otherData['isCascadeRemove']) {
-                // check if the relation target contains fields which might block
-                $association = $this->findBlockingRelations($targetClass);
-                if (!empty($association)) {
-                    $result[$field] = $association;
+                // if the relation does not target the specified class ignore
+                if ($data['targetEntity'] !== $className) {
                     continue;
                 }
+
+                // a relation that is mappedBy another property is not important
+                // those relations aren't dangerous if one side is removed
+                if ($data['mappedBy']) {
+                    continue;
+                }
+
+                $repository = $this->em->getRepository($classMetadata->name);
+                $relation = new InversedBlockingRelation($reflClass, $repository, $field);
+
+                // if the entity behind this relation is removed while we are removed,
+                // this relation is not blocking BUT the other entity (child) could have further relations
+                // which are again blocking the removal of the child.
+                if ($data['inversedBy']) {
+                    $ownerMapping = $thisClassMetadata->getAssociationMapping($data['inversedBy']);
+
+                    if ($ownerMapping['isCascadeRemove']) {
+                        $deepRelations = $this->findBlockingRelations($classMetadata->name);
+                        $relation = new DeepBlockingRelation($relation, $deepRelations);
+                    }
+                }
+
+                $blockingRelations[] = $relation;
             }
         }
 
-        return $result;
+        return $blockingRelations;
     }
 
     /**
-     * Gets all entities which can not safely be removed together with the specified entity.
-     *
      * @param object $entity
-     * @return object[]
-     * @throws \RuntimeException
+     * @return object[][]
      */
-    public function findBlockingEntities($entity)
+    public function findBlockingEntityChains($entity)
     {
         if (!is_object($entity)) {
             $type = is_object($entity) ? get_class($entity) : gettype($entity);
@@ -134,49 +133,27 @@ class DependencyService
         }
 
         $blockingRelations = $this->findBlockingRelations(get_class($entity));
-        return $this->scanFields($entity, $blockingRelations);
+        $allBlockingEntityChains = array();
+
+        foreach ($blockingRelations as $blockingRelation) {
+            $blockingEntityChains = $blockingRelation->findBlockingEntityChainsFor($entity);
+
+            foreach ($blockingEntityChains as $blockingEntityChain) {
+                $allBlockingEntityChains[] = $blockingEntityChain;
+            }
+        }
+
+        return $allBlockingEntityChains;
     }
 
     /**
      * @param object $entity
-     * @param array $relations
-     * @param array $chain
      * @return object[][]
+     * @deprecated use #findBlockingEntityChains instead
      */
-    protected function scanFields($entity, $relations, $chain = array())
+    public function findBlockingEntities($entity)
     {
-        $results = array();
-        foreach ($relations as $fieldName => $subRelations) {
-            $fieldEntities = $this->propertyAccessor->getValue($entity, $fieldName);
-            if (!is_array($fieldEntities) && !($fieldEntities instanceof \Traversable)) {
-                $fieldEntities = $fieldEntities !== null ? array($fieldEntities) : array();
-            }
-
-            // if there are no sub relations and the value is not empty, include values
-            // if there are sub relations scan them too for blocking relations
-            if ($subRelations === null) {
-                foreach ($fieldEntities as $fieldEntity) {
-                    $results[] = array_merge($chain, array($fieldEntity));
-                }
-            } else {
-                foreach ($fieldEntities as $fieldEntity) {
-                    $nextChain = array_merge($chain, array($fieldEntity));
-                    $subEntities = $this->scanFields($fieldEntity, $subRelations, $nextChain);
-                    foreach ($subEntities as $subEntityChain) {
-                        $results[] = $subEntityChain;
-                    }
-                }
-            }
-        }
-
-        // filter back references
-        foreach ($results as $index => $result) {
-            if (end($result) === $entity) {
-                unset($results[$index]);
-            }
-        }
-
-        return $results;
+        return $this->findBlockingEntityChains($entity);
     }
 
     /**
@@ -187,8 +164,8 @@ class DependencyService
      */
     public function isDeletable($entity)
     {
-        $blockingEntities = $this->findBlockingEntities($entity);
-        return empty($blockingEntities);
+        $chains = $this->findBlockingEntityChains($entity);
+        return empty($chains);
     }
 
     /**
@@ -238,8 +215,9 @@ class DependencyService
             throw new \RuntimeException("Expected an object, got $type");
         }
 
-        $blockingEntities = $this->findBlockingEntities($entity);
+        $blockingEntities = $this->findBlockingEntityChains($entity);
         if (!empty($blockingEntities)) {
+            $blockingEntities = array_map('end', $blockingEntities);
             throw new EntityRelationException("It is not safe to remove entity", $entity, $blockingEntities);
         }
 

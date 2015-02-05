@@ -10,8 +10,10 @@
 
 {% if not is_deletable(entity) %}
     {% set attr = attr|merge({
-    'title': dependency.tooltip(entity),
-    'data-toggle': 'tooltip',
+    'data-content': dependency.tooltip(entity),
+    'data-container': 'body',
+    'data-trigger': 'hover',
+    'data-toggle': 'popover',
     'data-placement': 'top',
     'data-html': 'true',
     'class': attr.class ~ ' disabled',
@@ -25,7 +27,7 @@
     {%- spaceless %}
         {%- for attrname, attrvalue in attr -%}
             {{- " " -}}
-            {%- if attrname in ['placeholder', 'title', 'alt'] -%}
+            {%- if attrname in ['placeholder', 'title', 'alt', 'data-content'] -%}
                 {{- attrname }}="{{ attrvalue|trans({}, translation_domain|default(null)) }}"
             {%- elseif attrvalue is sameas(true) -%}
                 {{- attrname }}="{{ attrname }}"

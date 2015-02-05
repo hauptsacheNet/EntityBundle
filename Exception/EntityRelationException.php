@@ -25,6 +25,7 @@ class EntityRelationException extends \Exception
         $relatedText = '';
         if (!empty($relatedEntities)) {
             $relatedText .= "\nFollowing Entities are involved:";
+
             foreach ($relatedEntities as $relatedEntity) {
                 $representation = $this->getEntityRepresentation($relatedEntity);
                 $relatedText .= "\n\t'$representation'";
