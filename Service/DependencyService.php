@@ -171,7 +171,7 @@ class DependencyService
      */
     public function isDeletable($entity)
     {
-        $chains = $this->findBlockingEntityChains($entity);
+        $chains = $this->findBlockingEntityChains($entity, 1);
         return empty($chains);
     }
 

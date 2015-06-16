@@ -27,3 +27,34 @@
 
     {% endspaceless -%}
 {% endmacro %}
+
+{% macro tooltip_attributes(entity, attr) %}
+    {%- spaceless %}
+
+        {% if not is_deletable(entity) %}
+            {% import 'HnEntityBundle:Dependency:macro.html.twig' as dependency %}
+            {% set attr = attr|merge({
+            'data-content': dependency.tooltip(entity),
+            'data-container': 'body',
+            'data-trigger': 'hover',
+            'data-toggle': 'popover',
+            'data-placement': 'top',
+            'data-html': 'true',
+            'style': 'pointer-events: auto',
+            'onclick': 'return false'
+            }) %}
+        {% endif %}
+
+        {%- for attrname, attrvalue in attr -%}
+            {{- " " -}}
+            {%- if attrname in ['placeholder', 'title', 'alt', 'data-content'] -%}
+                {{- attrname }}="{{ attrvalue|trans({}, translation_domain|default(null)) }}"
+            {%- elseif attrvalue is sameas(true) -%}
+                {{- attrname }}="{{ attrname }}"
+            {%- elseif attrvalue is not sameas(false) -%}
+                {{- attrname }}="{{ attrvalue }}"
+            {%- endif -%}
+        {%- endfor -%}
+
+    {% endspaceless %}
+{% endmacro tooltip_attributes %}
