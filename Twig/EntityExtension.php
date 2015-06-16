@@ -48,7 +48,7 @@ class EntityExtension extends \Twig_Extension
     {
         return array(
             new \Twig_SimpleFunction('delete_entity_path', array($this->dependencyService, 'generateDeleteUrl')),
-            new \Twig_SimpleFunction('find_delete_blocking_entities', array($this->dependencyService, 'findBlockingEntities')),
+            new \Twig_SimpleFunction('find_delete_blocking_entities', array($this->dependencyService, 'findBlockingEntityChains')),
             new \Twig_SimpleFunction('is_deletable', array($this->dependencyService, 'isDeletable')),
         );
     }

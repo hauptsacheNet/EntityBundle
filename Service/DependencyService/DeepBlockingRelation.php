@@ -30,14 +30,15 @@ class DeepBlockingRelation extends AbstractBlockingRelation
 
     /**
      * @param object $entity
-     * @return object[][]
+     * @param int $limit
+     * @return \object[][]
      */
-    public function findBlockingEntityChainsFor($entity)
+    public function findBlockingEntityChainsFor($entity, $limit = PHP_INT_MAX)
     {
         $this->typeCheck($entity);
         $blockingEntityChains = array();
 
-        $deepEntityChains = $this->relation->findBlockingEntityChainsFor($entity);
+        $deepEntityChains = $this->relation->findBlockingEntityChainsFor($entity, $limit);
         foreach ($deepEntityChains as $deepEntityChain) {
             $deepEntity = end($deepEntityChain);
 
@@ -49,7 +50,8 @@ class DeepBlockingRelation extends AbstractBlockingRelation
                     continue;
                 }
 
-                $deepBlockingEntityChains = $deepRelation->findBlockingEntityChainsFor($deepEntity);
+                $leftToFind = $limit - count($blockingEntityChains);
+                $deepBlockingEntityChains = $deepRelation->findBlockingEntityChainsFor($deepEntity, $leftToFind);
                 foreach ($deepBlockingEntityChains as $blockingEntityChain) {
                     $blockingEntityChains[] = array_merge($deepEntityChain, $blockingEntityChain);
                 }

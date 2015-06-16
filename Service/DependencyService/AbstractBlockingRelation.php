@@ -55,6 +55,6 @@ abstract class AbstractBlockingRelation implements BlockingRelationInterface
      */
     public function isBlocked($entity)
     {
-        return count($this->findBlockingEntityChainsFor($entity)) > 0;
+        return count($this->findBlockingEntityChainsFor($entity, 1)) > 0;
     }
 }

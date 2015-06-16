@@ -59,13 +59,15 @@ class InversedBlockingRelation extends AbstractBlockingRelation
 
     /**
      * @param object $entity
-     * @return object[][]
+     * @param int $limit
+     * @return \object[][]
      */
-    public function findBlockingEntityChainsFor($entity)
+    public function findBlockingEntityChainsFor($entity, $limit = PHP_INT_MAX)
     {
         $this->typeCheck($entity);
 
         $qb = $this->createQueryBuilder($entity);
+        $qb->setMaxResults($limit);
         $result = $qb->getQuery()->getResult();
 
         $chains = array();

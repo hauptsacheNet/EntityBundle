@@ -67,7 +67,8 @@ class DependencyService
 
     /**
      * @param string $className
-     * @return BlockingRelationInterface[]
+     * @return DependencyService\BlockingRelationInterface[]
+     * @throws \Doctrine\ORM\Mapping\MappingException
      */
     protected function findBlockingRelations($className)
     {
@@ -123,9 +124,10 @@ class DependencyService
 
     /**
      * @param object $entity
-     * @return object[][]
+     * @param int $limit
+     * @return \object[][]
      */
-    public function findBlockingEntityChains($entity)
+    public function findBlockingEntityChains($entity, $limit = PHP_INT_MAX)
     {
         if (!is_object($entity)) {
             $type = is_object($entity) ? get_class($entity) : gettype($entity);
@@ -136,7 +138,12 @@ class DependencyService
         $allBlockingEntityChains = array();
 
         foreach ($blockingRelations as $blockingRelation) {
-            $blockingEntityChains = $blockingRelation->findBlockingEntityChainsFor($entity);
+            $leftToFind = $limit - count($allBlockingEntityChains);
+            if ($leftToFind <= 0) {
+                break;
+            }
+
+            $blockingEntityChains = $blockingRelation->findBlockingEntityChainsFor($entity, $leftToFind);
 
             foreach ($blockingEntityChains as $blockingEntityChain) {
                 $allBlockingEntityChains[] = $blockingEntityChain;

@@ -1,7 +1,10 @@
 {% macro tooltip(entity) %}
     {%- spaceless %}
         {{ 'Is referenced by'|trans }}:<br>
-        {% for blockingEntityChain in find_delete_blocking_entities(entity) %}
+
+        {% set blockingEntityChains = find_delete_blocking_entities(entity, 5) %}
+
+        {% for blockingEntityChain in blockingEntityChains|slice(0, 4) %}
             <div class="dependency-tooltip-row" style="text-align: left;">
                 {% for index, chainEntity in blockingEntityChain %}
                     <span style="display: inline-block">
@@ -15,5 +18,12 @@
                 {% endfor %}
             </div>
         {% endfor %}
+
+        {% if blockingEntityChains|length > 4 %}
+            <span style="display: inline-block" class="text-muted">
+                {{ 'and more...'|trans }}
+            </span>
+        {% endif %}
+
     {% endspaceless -%}
 {% endmacro %}
