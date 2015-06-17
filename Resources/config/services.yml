@@ -17,7 +17,7 @@ services:
 
   hn_entity.dependency:
     class: %hn_entity.dependency.class%
-    arguments: [@doctrine.orm.entity_manager, @hn_entity.entity, @security.csrf.token_manager, @router]
+    arguments: [@doctrine.orm.entity_manager, @hn_entity.entity, @security.csrf.token_manager, @router, @templating.helper.stopwatch]
 
   hn_entity.formlist:
     class: %hn_entity.formlist.class%

@@ -22,6 +22,11 @@ class InversedBlockingRelation extends AbstractBlockingRelation
      */
     protected $property;
 
+    /**
+     * @var array
+     */
+    private $cache = array();
+
     public function __construct(\ReflectionClass $sourceClass, EntityRepository $repository, $property)
     {
         parent::__construct($sourceClass);
@@ -59,21 +64,33 @@ class InversedBlockingRelation extends AbstractBlockingRelation
 
     /**
      * @param object $entity
-     * @param int $limit
      * @return \object[][]
      */
-    public function findBlockingEntityChainsFor($entity, $limit = PHP_INT_MAX)
+    public function findBlockingEntityChainsFor($entity)
     {
         $this->typeCheck($entity);
 
+        $cacheKey = spl_object_hash($entity);
+        if (isset($this->cache[$cacheKey])) {
+            return $this->cache[$cacheKey];
+        }
+
         $qb = $this->createQueryBuilder($entity);
-        $qb->setMaxResults($limit);
         $result = $qb->getQuery()->getResult();
 
         $chains = array();
         foreach ($result as $entry) {
             $chains[] = array($entry);
         }
-        return $chains;
+
+        return $this->cache[$cacheKey] = $chains;
+    }
+
+    /**
+     * @return void
+     */
+    public function clearCaches()
+    {
+        $this->cache = array();
     }
 }

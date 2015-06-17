@@ -33,14 +33,18 @@ interface BlockingRelationInterface
      * It is possible to use that chain to represent how the entity is blocked from removal.
      *
      * @param object $entity
-     * @param int $limit
      * @return \object[][]
      */
-    public function findBlockingEntityChainsFor($entity, $limit = PHP_INT_MAX);
+    public function findBlockingEntityChainsFor($entity);
 
     /**
      * @param object $entity
      * @return bool
      */
     public function isBlocked($entity);
+
+    /**
+     * @return void
+     */
+    public function clearCaches();
 }

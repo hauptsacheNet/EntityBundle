@@ -10,6 +10,7 @@ namespace Hn\EntityBundle\Service;
 
 
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Hn\EntityBundle\Exception\EntityRelationException;
 use Hn\EntityBundle\Service\DependencyService\BlockingRelationInterface;
@@ -19,6 +20,7 @@ use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Stopwatch\Stopwatch;
 
 class DependencyService
 {
@@ -51,18 +53,24 @@ class DependencyService
     private $propertyAccessor;
 
     /**
+     * @var Stopwatch
+     */
+    private $stopwatch;
+
+    /**
      * array("className" => array(BlockingRelation, ...))
      * @var BlockingRelationInterface[][]
      */
     private $blockingRelationCache = array();
 
-    public function __construct(EntityManager $em, EntityService $entityService, CsrfTokenManagerInterface $csrf, RouterInterface $router)
+    public function __construct(EntityManager $em, EntityService $entityService, CsrfTokenManagerInterface $csrf, RouterInterface $router, $stopwatch)
     {
         $this->em = $em;
         $this->entityService = $entityService;
         $this->csrf = $csrf;
         $this->router = $router;
         $this->propertyAccessor = PropertyAccess::createPropertyAccessor();
+        $this->stopwatch = $stopwatch;
     }
 
     /**
@@ -72,9 +80,11 @@ class DependencyService
      */
     protected function findBlockingRelations($className)
     {
-        if (array_key_exists($className, $this->blockingRelationCache)) {
+        if (isset($this->blockingRelationCache[$className])) {
             return $this->blockingRelationCache[$className];
         }
+
+        $this->stopwatch->start("find blocking relations for $className");
 
         $blockingRelations = array();
         $classMetadataFactory = $this->em->getMetadataFactory();
@@ -119,6 +129,9 @@ class DependencyService
             }
         }
 
+        $this->blockingRelationCache[$className] = $blockingRelations;
+        $this->stopwatch->stop("find blocking relations for $className");
+
         return $blockingRelations;
     }
 
@@ -134,23 +147,37 @@ class DependencyService
             throw new \RuntimeException("Expected an object, got $type");
         }
 
-        $blockingRelations = $this->findBlockingRelations(get_class($entity));
+        $className = get_class($entity);
+        $blockingRelations = $this->findBlockingRelations($className);
         $allBlockingEntityChains = array();
 
         foreach ($blockingRelations as $blockingRelation) {
-            $leftToFind = $limit - count($allBlockingEntityChains);
-            if ($leftToFind <= 0) {
+            if (count($allBlockingEntityChains) >= $limit) {
                 break;
             }
 
-            $blockingEntityChains = $blockingRelation->findBlockingEntityChainsFor($entity, $leftToFind);
+            $this->stopwatch->start("find blocking entities for $className");
+            $blockingEntityChains = $blockingRelation->findBlockingEntityChainsFor($entity);
+            $this->stopwatch->stop("find blocking entities for $className");
 
             foreach ($blockingEntityChains as $blockingEntityChain) {
                 $allBlockingEntityChains[] = $blockingEntityChain;
             }
         }
 
-        return $allBlockingEntityChains;
+        return array_slice($allBlockingEntityChains, 0, $limit);
+    }
+
+    /**
+     * Must be called if the database state changes
+     */
+    public function clearResultCache()
+    {
+        foreach ($this->blockingRelationCache as $className => $relations) {
+            foreach ($relations as $relation) {
+                $relation->clearCaches();
+            }
+        }
     }
 
     /**
