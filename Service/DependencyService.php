@@ -16,6 +16,7 @@ use Hn\EntityBundle\Exception\EntityRelationException;
 use Hn\EntityBundle\Service\DependencyService\BlockingRelationInterface;
 use Hn\EntityBundle\Service\DependencyService\DeepBlockingRelation;
 use Hn\EntityBundle\Service\DependencyService\InversedBlockingRelation;
+use Hn\EntityBundle\Util\BlockingRelationStorage;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\Routing\RouterInterface;
@@ -59,7 +60,7 @@ class DependencyService
 
     /**
      * array("className" => array(BlockingRelation, ...))
-     * @var BlockingRelationInterface[][]
+     * @var BlockingRelationStorage[]
      */
     private $blockingRelationCache = array();
 
@@ -75,7 +76,7 @@ class DependencyService
 
     /**
      * @param string $className
-     * @return DependencyService\BlockingRelationInterface[]
+     * @return BlockingRelationStorage
      * @throws \Doctrine\ORM\Mapping\MappingException
      */
     protected function findBlockingRelations($className)
@@ -86,7 +87,7 @@ class DependencyService
 
         $this->stopwatch->start("find blocking relations for $className");
 
-        $blockingRelations = array();
+        $blockingRelations = new BlockingRelationStorage();
         $classMetadataFactory = $this->em->getMetadataFactory();
 
         /** @var ClassMetadataInfo $thisClassMetadata */
@@ -125,7 +126,7 @@ class DependencyService
                     }
                 }
 
-                $blockingRelations[] = $relation;
+                $blockingRelations->add($relation);
             }
         }
 
@@ -140,7 +141,7 @@ class DependencyService
      * @param int $limit
      * @return \object[][]
      */
-    public function findBlockingEntityChains($entity, $limit = PHP_INT_MAX)
+    public function findBlockingEntityChains($entity, $limit = 10)
     {
         if (!is_object($entity)) {
             $type = is_object($entity) ? get_class($entity) : gettype($entity);
@@ -151,13 +152,16 @@ class DependencyService
         $blockingRelations = $this->findBlockingRelations($className);
         $allBlockingEntityChains = array();
 
+        /** @var BlockingRelationInterface $blockingRelation */
         foreach ($blockingRelations as $blockingRelation) {
-            if (count($allBlockingEntityChains) >= $limit) {
+            $leftToFind = $limit - count($allBlockingEntityChains);
+            if ($leftToFind <= 0) {
                 break;
             }
 
             $this->stopwatch->start("find blocking entities for $className");
-            $blockingEntityChains = $blockingRelation->findBlockingEntityChainsFor($entity);
+            $blockingEntityChains = $blockingRelation->findBlockingEntityChainsFor($entity, $leftToFind);
+            $blockingRelations->voteRelation($blockingRelation, count($blockingEntityChains));
             $this->stopwatch->stop("find blocking entities for $className");
 
             foreach ($blockingEntityChains as $blockingEntityChain) {
@@ -174,6 +178,7 @@ class DependencyService
     public function clearResultCache()
     {
         foreach ($this->blockingRelationCache as $className => $relations) {
+            /** @var BlockingRelationInterface $relation */
             foreach ($relations as $relation) {
                 $relation->clearCaches();
             }
@@ -187,6 +192,7 @@ class DependencyService
      */
     public function findBlockingEntities($entity)
     {
+        trigger_error("findBlockingEntities is deprecated, use findBlockingEntityChains", E_USER_DEPRECATED);
         return $this->findBlockingEntityChains($entity);
     }
 

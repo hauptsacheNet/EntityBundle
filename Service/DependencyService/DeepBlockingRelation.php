@@ -9,6 +9,8 @@
 namespace Hn\EntityBundle\Service\DependencyService;
 
 
+use Hn\EntityBundle\Util\BlockingRelationStorage;
+
 class DeepBlockingRelation extends AbstractBlockingRelation
 {
     /**
@@ -17,11 +19,11 @@ class DeepBlockingRelation extends AbstractBlockingRelation
     private $relation;
 
     /**
-     * @var BlockingRelationInterface[]
+     * @var BlockingRelationStorage
      */
     private $deepRelations;
 
-    public function __construct(BlockingRelationInterface $relation, array $deepRelations)
+    public function __construct(BlockingRelationInterface $relation, BlockingRelationStorage $deepRelations)
     {
         parent::__construct($relation->getReflectionClass());
         $this->relation = $relation;
@@ -30,9 +32,10 @@ class DeepBlockingRelation extends AbstractBlockingRelation
 
     /**
      * @param object $entity
+     * @param int $limit
      * @return \object[][]
      */
-    public function findBlockingEntityChainsFor($entity)
+    public function findBlockingEntityChainsFor($entity, $limit = PHP_INT_MAX)
     {
         $this->typeCheck($entity);
 
@@ -42,7 +45,12 @@ class DeepBlockingRelation extends AbstractBlockingRelation
         foreach ($deepEntityChains as $deepEntityChain) {
             $deepEntity = end($deepEntityChain);
 
+            /** @var BlockingRelationInterface $deepRelation */
             foreach ($this->deepRelations as $deepRelation) {
+                $leftToFind = $limit - count($blockingEntityChains);
+                if ($leftToFind <= 0) {
+                    break;
+                }
 
                 // for the case of single table inheritance it is possible that the relation contains different
                 // instances. This check is required so that more specific relations which may be blocked can be checked
@@ -50,14 +58,16 @@ class DeepBlockingRelation extends AbstractBlockingRelation
                     continue;
                 }
 
-                $deepBlockingEntityChains = $deepRelation->findBlockingEntityChainsFor($deepEntity);
+                $deepBlockingEntityChains = $deepRelation->findBlockingEntityChainsFor($deepEntity, $leftToFind);
+                $this->deepRelations->voteRelation($deepRelation, count($deepBlockingEntityChains));
+
                 foreach ($deepBlockingEntityChains as $blockingEntityChain) {
                     $blockingEntityChains[] = array_merge($deepEntityChain, $blockingEntityChain);
                 }
             }
         }
 
-        return $blockingEntityChains;
+        return array_slice($blockingEntityChains, 0, $limit);
     }
 
     /**
@@ -66,6 +76,7 @@ class DeepBlockingRelation extends AbstractBlockingRelation
     public function clearCaches()
     {
         $this->relation->clearCaches();
+        /** @var BlockingRelationInterface $relation */
         foreach ($this->deepRelations as $relation) {
             $relation->clearCaches();
         }

@@ -32,9 +32,10 @@ class DirectBlockingRelation extends AbstractBlockingRelation
 
     /**
      * @param object $entity
+     * @param int $limit
      * @return \object[][]
      */
-    public function findBlockingEntityChainsFor($entity)
+    public function findBlockingEntityChainsFor($entity, $limit = PHP_INT_MAX)
     {
         $this->typeCheck($entity);
 
@@ -53,7 +54,7 @@ class DirectBlockingRelation extends AbstractBlockingRelation
             $chains[] = array($entry);
         }
 
-        return $chains;
+        return array_slice($chains, 0, $limit);
     }
 
     /**
