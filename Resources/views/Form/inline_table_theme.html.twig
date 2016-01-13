@@ -23,7 +23,7 @@
             'href': attr.href|default('#')
         }) %}
         <a {{ block('widget_container_attributes') }}>
-            {{ text_value|default(value)|default(attr.placeholder|default('empty')|trans) }}
+            {{- text_value|default(value)|default(attr.placeholder|default('empty')|trans) -}}
         </a>
     {% endspaceless %}
 {% endblock %}
