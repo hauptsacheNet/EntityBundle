@@ -3,6 +3,7 @@ parameters:
     hn_entity.dependency.class: Hn\EntityBundle\Service\DependencyService
     hn_entity.formlist.class: Hn\EntityBundle\Service\FormListService
     hn_entity.entityextension.class: Hn\EntityBundle\Twig\EntityExtension
+    hn_entity.entityformextension.class: Hn\EntityBundle\Twig\FormListExtension
     hn_entity.entity.class: Hn\EntityBundle\Service\EntityService
     hn_entity.deletetype.class: Hn\EntityBundle\Form\DeleteType
     hn_entity.inlineformtype.class: Hn\EntityBundle\Form\InlineFormType
@@ -26,6 +27,12 @@ services:
   hn_entity.entityextension:
     class: %hn_entity.entityextension.class%
     arguments: [@hn_entity.dependency, @hn_entity.entity]
+    tags:
+      - { name: twig.extension }
+
+  hn_entity.entityformextension:
+    class: %hn_entity.entityformextension.class%
+    arguments: [@hn_entity.formlist]
     tags:
       - { name: twig.extension }
 
