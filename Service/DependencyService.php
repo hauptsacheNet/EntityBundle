@@ -110,6 +110,21 @@ class DependencyService
                 if ($data['mappedBy']) {
                     continue;
                 }
+                // if the relation is join via a join table and the inverse join column has 
+                // on delete cascade, then it is not blocking
+                if (array_key_exists('joinTable', $data) && $data['joinTable']) {
+                    $cascadeDelete = false;
+                    if (array_key_exists('inverseJoinColumns', $data['joinTable']) && ($data['joinTable']['inverseJoinColumns'])) {
+                        foreach ($data['joinTable']['inverseJoinColumns'] as $inverseJoinColumn) {
+                            if (array_key_exists('onDelete', $inverseJoinColumn) && $inverseJoinColumn['onDelete'] == 'CASCADE') {
+                                $cascadeDelete = true;
+                            }
+                        }
+                    }
+                    if ($cascadeDelete) {
+                        continue;
+                    }
+                }
 
                 $repository = $this->em->getRepository($classMetadata->name);
                 $relation = new InversedBlockingRelation($reflClass, $repository, $field);
