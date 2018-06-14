@@ -125,6 +125,18 @@ class DependencyService
                         continue;
                     }
                 }
+                // if the relations join column states on delete set null it is non blocking
+                if (array_key_exists('joinColumns', $data) && $data['joinColumns']) {
+                    $onDeleteSetNull = false;
+                    foreach ($data['joinColumns'] as $joinColumn) {
+                        if (array_key_exists('onDelete', $joinColumn) && $joinColumn['onDelete'] = 'SET NULL') {
+                            $onDeleteSetNull = true;
+                        }
+                    }
+                    if ($onDeleteSetNull) {
+                        continue;
+                    }
+                }
 
                 $repository = $this->em->getRepository($classMetadata->name);
                 $relation = new InversedBlockingRelation($reflClass, $repository, $field);
