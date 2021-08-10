@@ -27,6 +27,8 @@ class CommaListTransformer implements DataTransformerInterface
     private $propertyAccessor;
 
     private $allowCreate;
+    
+    private static $newTags = [];
 
     public function __construct(ObjectManager $manager, $className, $propertyPath, $allowCreate)
     {
@@ -143,9 +145,14 @@ class CommaListTransformer implements DataTransformerInterface
         }
 
         foreach ($rawNames as $tagName) {
+            if(isset(self::$newTags[strtolower($tagName)])) {
+                $tags[] = self::$newTags[strtolower($tagName)];
+                continue;
+            }
             $tag = new $this->className();
             $this->propertyAccessor->setValue($tag, $this->propertyPath, $tagName);
             $tags[] = $tag;
+            self::$newTags[strtolower($tagName)] = $tag;
         }
 
         return new ArrayCollection($tags);
